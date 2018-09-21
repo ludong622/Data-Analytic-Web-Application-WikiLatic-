@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<link rel="stylesheet" type="text/css" href="/css/functionstyle.css" media="screen" />
+<link rel="stylesheet" type="text/css" href="/css/jqx.base.css">
+<link rel="stylesheet" type="text/css" href="/css/jqx.energyblue.css">
+<link rel="stylesheet" type="text/css" href="/css/jqx.arctic.css">
+<script src="http://code.jquery.com/jquery-1.8.3.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+<script type="text/javascript" src="/js/jqx-all.js"></script>
+<script type="text/javascript" src="/js/globalize.js"></script>
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+
+
+<script>
+	google.charts.load('current', {'packages':['bar','corechart']});
+	$(document).ready(function(){
+		$("#individualalldiv").hide();
+		$("#authoralldiv").hide();
+		
+		$("#showoverall").click(function(e){
+			e.preventDefault();
+			$("#overallalldiv").show();
+			$("#individualalldiv").hide();
+			$("#authoralldiv").hide();
+		})
+		
+		$("#showindividual").click(function(e){
+			e.preventDefault();
+			$("#overallalldiv").hide();
+			$("#individualalldiv").show();
+			$("#authoralldiv").hide();
+		})
+		
+		$("#showauthor").click(function(e){
+			e.preventDefault();
+			$("#overallalldiv").hide();
+			$("#individualalldiv").hide();
+			$("#authoralldiv").show();
+		})
+		
+		var fiveusers=[]
+
+		getin();
+		getovearll();
+
+		function getin(){
+			var source = [];
+			jqxhr = $.get('/',{getin:1});
+			jqxhr.done(function(result){
+				for(var i=0;i<result.length;i++){
+				source.push(result[i]._id+"@"+result[i].num_high)
+			}
+			$("#list").jqxComboBox({theme: "arctic", selectedIndex: 0, source: source, width: 200, height: 25 });
+			})		
+		}
+		
+		$("#individual").click(function(){
+			fiveusers=[]
+			title=$("#list").val().split("@")[0]
+			total_number=$("#list").val().split("@")[1]
+			jqxhr1=$.get('/',{check:title});
+			jqxhr1.done(function(result){
+				if(result[0]=="updated"){
+					alert("Update "+result[1]+" files")
+				}else{
+					alert("Already the newest!")
+				}
+				jqxhr = $.get('/',{individual:title})
+				console.log("jqxhr")
+				jqxhr.done(function(results){
+					console.log(results)
+					result=results[0]
+					s="<p>Title: "+title+"</p>"
+					s=s+"<p>Total number of revisions: "+total_number+"</p>"
+					s=s+"<table><caption>Top 5 regular users</caption><tr><th>User</th><th>Number</th></tr>"					
+					for(var i=0;i<5;i++){
+						s=s+"<tr><td>"+result[i]._id+"</td><td>"+result[i].numberOfrevisions+"</td></tr>"
+						fiveusers.push(result[i]._id)
+					}
+					s=s+"</table>"
+
+
+					s=s+"<a href=\"/showindividualpie\" id=\"showindividualpie\">pie</a>  <a href=\"/showindi\" id=\"showindividualbar\">bar</a>"
+
+
+
+					$("#individual1").html(s)
+
+					s=""
+					for(var i=0;i<5;i++){
+						s=s+"<input type=\"checkbox\" class=\"five\">"+fiveusers[i]
+					}
+					s=s+"<input type=\"button\" id=\"selectusers\" value=\"submit\">"
+					$("#individualbar2select").html(s)
+
+
+					$("#showindividualpie").click(function(e){
+						e.preventDefault();
+						drwaindividualpie();
+					})
+
+					$("#showindividualbar").click(function(e){
+						e.preventDefault();
+						drawindividualbar1();
+					})
+
+					$("#selectusers").click(function(){
+						usersselect=[]
+						checkboxes=$("input[class='five']")
+						console.log(checkboxes)
+						for(var i=0;i<5;i++){
+							if(checkboxes[i].checked){
+								usersselect.push(fiveusers[i])
+							}
+						}
+						var dic = new Array()
+						fiveuserresult=results[5]
+						console.log(usersselect)
+						keySet=[]
+						for(var i=0;i<fiveuserresult.length;i++){
+							year=fiveuserresult[i]._id.year
+							number=fiveuserresult[i].numberOfrevisions
+							name=fiveuserresult[i]._id.user	
+							indexOfName=usersselect.indexOf(name)
+							if(indexOfName>-1){
+								console.log(year+" "+number+" "+name)
+								if(keySet.indexOf(year)>-1){
+									dic[year][indexOfName]=dic[year][indexOfName]+number
+								}else{
+									for(j=0;j<usersselect.length;j++){
+										if(j==0){
+											dic[year]=[0]
+										}else{
+											dic[year].push(0)
+										}										
+									}
+									dic[year][indexOfName]=number
+									keySet.push(year)
+								}
+							}
+
+						}
+						console.log(dic)
+
+
+						graphData3 = new google.visualization.DataTable();
+						graphData3.addColumn('string', 'Year');
+						for(var i=0;i<usersselect.length;i++){
+							graphData3.addColumn('number', usersselect[i]);
+						}
+						
+
+						for(var key in dic){
+							row=[key]
+							for(var i=0;i<usersselect.length;i++){
+								row.push(dic[key][i])
+							}
+							graphData3.addRow(row)
+						}
+
+
+				        var options3 = {
+				          chart: {
+				            title: 'revision number distribution by year and by user type',
+				          },
+				          bars: 'vertical' ,
+				          'width':800,
+		        		   'height':500
+				        };
+				        var chart3 = new google.charts.Bar(document.getElementById('individualbar2'));
+				        chart3.draw(graphData3, google.charts.Bar.convertOptions(options3));
+					})
+
+
+
+					anon_result=results[1]
+					bot_result=results[2]
+					admin_result=results[3]
+					regular_result=results[4]
+					console.log("111")
+					console.log(results[1])
+					console.log(results[2])
+					console.log(results[3])
+					console.log(results[4])
+
+
+					years=[]
+					
+					for(var i=0;i<18;i++){
+						need_add=[]
+						year=(i+2001).toString()
+						need_add.push(year)
+						need_add.push(0)
+						need_add.push(0)
+						need_add.push(0)
+						need_add.push(0)
+						for(var j=0;j<admin_result.length;j++){
+							if(admin_result[j]._id==year){
+								need_add[1]=admin_result[j].numberOfrevisions
+								break
+							}
+						}
+						for(var j=0;j<anon_result.length;j++){
+							if(anon_result[j]._id==year){
+								need_add[2]=anon_result[j].numberOfrevisions
+								break
+							}
+						}
+						for(var j=0;j<bot_result.length;j++){
+							if(bot_result[j]._id==year){
+								need_add[3]=bot_result[j].numberOfrevisions
+								break
+							}
+						}
+						for(var j=0;j<regular_result.length;j++){
+							if(regular_result[j]._id==year){
+								need_add[4]=regular_result[j].numberOfrevisions
+								break
+							}
+						}
+						years.push(need_add)
+					}
+					console.log(years)
+
+					graphData1 = new google.visualization.DataTable();
+					graphData1.addColumn('string', 'Year');
+					graphData1.addColumn('number', 'Admin');
+					graphData1.addColumn('number', 'Anon');
+					graphData1.addColumn('number', 'Bot');
+					graphData1.addColumn('number', 'Regular');
+
+					for(var i=0;i<18;i++){
+						graphData1.addRow(years[i])
+					}
+
+			        var options1 = {
+			          chart: {
+			            title: 'revision number distribution by year and by user type',
+			          },
+			          bars: 'vertical' ,
+			          'width':800,
+	        		   'height':500
+			        };
+
+			        function drawindividualbar1(){
+			        	var chart1 = new google.charts.Bar(document.getElementById('individualbar1'));			        
+			        	chart1.draw(graphData1, google.charts.Bar.convertOptions(options1));
+			      	}
+			        
+			        admin_total=0
+			        bot_total=0
+			        regular_total=0
+			        anon_total=0
+			        for(var i=0;i<18;i++){
+			        	admin_total=admin_total+years[i][1]
+			        	anon_total=anon_total+years[i][2]
+			        	bot_total=bot_total+years[i][3]
+			        	regular_total=regular_total+years[i][4]
+			        }
+			        graphData2 = new google.visualization.DataTable();
+					graphData2.addColumn('string', 'Type');
+					graphData2.addColumn('number', 'Total');
+					graphData2.addRow(['admin',admin_total]);
+					graphData2.addRow(['bot',bot_total]);
+					graphData2.addRow(['regular',regular_total]);
+					graphData2.addRow(['anon',anon_total]);
+					function drwaindividualpie(){
+						var chart2 = new google.visualization.PieChart(document.getElementById('individualbar1'));
+						var options2 = {'title':"revision number distribution by user type",
+						        'width':800,
+						        'height':500};					
+						chart2.draw(graphData2, options2);
+					}
+					drwaindividualpie()
+					
+
+
+
+
+								
+				})		
+			})					
+		})
+		
+		$("#authorbutton").click(function(){
+			var name=$("#authortext").val()
+			jqxhr=$.get('/',{author:name})
+			s=""
+			jqxhr.done(function(result){
+				if(result.length==0){
+					alert("No such a author!")
+				}
+				s=s+"<table><tr><th>Article</th><th>Number</th><th>Timestamps</th></tr>"
+				for(var i=0;i<result.length;i++){					
+					s=s+"<tr><td>"+result[i]._id+"</td><td>"+result[i].numberOfrevisions+"</td>"
+					if(result[i].numberOfrevisions>1){
+						s=s+"<td>"
+						s=s+"<select><option>Timestamps</option>"
+						for(var j=0;j<result[i].numberOfrevisions;j++){
+							s=s+"<option>"+result[i].timestamps[j]+"</option>"
+						}
+						s=s+"</td>"
+					}else{
+						s=s+"<td></td>"
+					}
+					s=s+"</tr>"
+				}
+				$("#authordiv").html(s)
+				
+			})
+		
+		})
+
+
+
+		function getovearll(){			
+			jqxhr = $.get('/',{overall:1});
+			jqxhr.done(function(results) {
+				o1_result=results[0]
+				o4_result=results[1]	
+				o5_result=results[2]
+				o6_result=results[3]
+				o7_result=results[4]
+				regular_result=results[5]
+				anon_result=results[6]
+				bot_result=results[7]
+				admin_result=results[8]
+				var o1="<div id=\"o1\">3 articles with highest number of revisions: ";
+				for(var i=0;i<2;i++){
+					o1=o1+o1_result[i]._id+", ";
+				}
+				o1=o1+o1_result[2]._id+".";
+				o1=o1+"</div>"
+				console.log("o1")
+
+				var o2="<div id=\"o2\">3 articles with lowest number of revisions: "
+				for(var i=o1_result.length-1;i>o1_result.length-3;i--){
+					o2=o2+o1_result[i]._id+", ";
+				}
+				o2=o2+o1_result[o1_result.length-3]._id+".";
+				o2=o2+"</div>"
+				console.log("o2")
+
+				o3="<input type=\"text\" id=\"overall3\">  <input type=\"button\" id=\"change\" value=\"change\">"
+
+				var o4="<div>The article edited by largest group of registered users: "+o4_result[0]._id+"</div>"
+				
+				console.log("o4")
+				var o5="<div>The article edited by smallest group of registered users: "+o5_result[0]._id+"</div>"
+				console.log("o5")
+
+				var o6="<div>The top 3 articles with the longest history: "
+				for(var i=0;i<2;i++){
+					o6=o6+o6_result[i]._id+", ";
+				}
+				o6=o6+o6_result[2]._id+".";
+				o6=o6+"</div>"
+				console.log("o6")
+
+				var o7="<div>Article with the shortest history: "+o7_result[0]._id+"</div>"
+
+				var o8="<a href=\"/showindividualpie\" id=\"showoverallpie\">pie</a>  <a href=\"/showindi\" id=\"showoverallbar\">bar</a>"
+				
+				console.log("o7")
+				$("#overall11").html(o1+o2+o3+o4+o5+o6+o7+o8);
+				$("#change").click(function(){
+					reg=/^[0-9]+$/	
+					m=$("#overall3").val();
+					if(reg.test(m)){
+						n=Number(m)
+						if(n<=99 && n>0){
+							var o1="<div id=\"o1\">"+n+" articles with highest number of revisions: ";
+							for(var i=0;i<n-1;i++){
+								o1=o1+o1_result[i]._id+", ";
+							}
+							o1=o1+o1_result[n-1]._id+".";
+							o1=o1+"</div>"
+							console.log("o1")
+							$("#o1").html(o1)
+							
+							var o2="<div id=\"o2\">"+n+" articles with lowest number of revisions: "
+							for(var i=o1_result.length-1;i>o1_result.length-n;i--){
+								o2=o2+o1_result[i]._id+", ";
+							}
+							o2=o2+o1_result[o1_result.length-n]._id+".";
+							o2=o2+"</div>"
+							console.log("o2")
+							$("#o2").html(o2)
+						}
+						else{
+							alert("You should type in a number smaller than 100, bigger than 0!")
+						}
+
+					}
+					else{
+						alert("You should type in numbers!")
+					}		
+				})
+
+				$("#showoverallpie").click(function(e){
+					e.preventDefault();
+					drawoverallpie();
+				})
+
+				$("#showoverallbar").click(function(e){
+					e.preventDefault();
+					drawoverallbar();
+				})
+
+				
+
+				years=[]
+				
+				for(var i=0;i<18;i++){
+					need_add=[]
+					year=(i+2001).toString()
+					need_add.push(year)
+					need_add.push(0)
+					need_add.push(0)
+					need_add.push(0)
+					need_add.push(0)
+					for(var i=0;i<admin_result.length;i++){
+						if(admin_result[i]._id==year){
+							need_add[1]=admin_result[i].numberOfrevisions
+							break
+						}
+					}
+					for(var i=0;i<anon_result.length;i++){
+						if(anon_result[i]._id==year){
+							need_add[2]=anon_result[i].numberOfrevisions
+							break
+						}
+					}
+					for(var i=0;i<bot_result.length;i++){
+						if(bot_result[i]._id==year){
+							need_add[3]=bot_result[i].numberOfrevisions
+							break
+						}
+					}
+					for(var i=0;i<regular_result.length;i++){
+						if(regular_result[i]._id==year){
+							need_add[4]=regular_result[i].numberOfrevisions
+							break
+						}
+					}
+					years.push(need_add)
+				}
+
+				graphData1 = new google.visualization.DataTable();
+				graphData1.addColumn('string', 'Year');
+				graphData1.addColumn('number', 'Admin');
+				graphData1.addColumn('number', 'Anon');
+				graphData1.addColumn('number', 'Bot');
+				graphData1.addColumn('number', 'Regular');
+
+				for(var i=0;i<18;i++){
+					graphData1.addRow(years[i])
+				}
+
+		        var options1 = {
+		          chart: {
+		            title: 'revision number distribution by year and by user type',
+		          },
+		          bars: 'vertical' ,
+		          'width':800,
+        		   'height':500
+		        };
+
+		        function drawoverallbar(){
+		        	 var chart1 = new google.charts.Bar(document.getElementById('overallpie'));
+		        	chart1.draw(graphData1, google.charts.Bar.convertOptions(options1));
+		        }
+
+		        
+		        admin_total=0
+		        bot_total=0
+		        regular_total=0
+		        anon_total=0
+		        for(var i=0;i<18;i++){
+		        	admin_total=admin_total+years[i][1]
+		        	anon_total=anon_total+years[i][2]
+		        	bot_total=bot_total+years[i][3]
+		        	regular_total=regular_total+years[i][4]
+		        }
+		        graphData2 = new google.visualization.DataTable();
+				graphData2.addColumn('string', 'Type');
+				graphData2.addColumn('number', 'Total');
+				graphData2.addRow(['admin',admin_total]);
+				graphData2.addRow(['bot',bot_total]);
+				graphData2.addRow(['regular',regular_total]);
+				graphData2.addRow(['anon',anon_total]);
+
+				function drawoverallpie(){
+					var chart2 = new google.visualization.PieChart(document.getElementById('overallpie'));
+					var options2 = {'title':"revision number distribution by user type",
+					        'width':800,
+					        'height':500};
+					chart2.draw(graphData2, options2);
+				}
+				drawoverallpie()
+
+			});
+		}
+			
+		
+
+		
+		
+	})	
+</script>
+
+</head>
+<body>
+<h2 id='title1'>Wiki Analytics</h2>
+
+<a href="/login?logout=1" style="float:right">log out</a>
+
+<a href="/over" id="showoverall"> Overall </a>
+<a href="/indi" id="showindividual"> Individual </a>
+<a href="/auth" id="showauthor"> Author </a>
+
+<div id="overallalldiv">
+	<input type="button" id="overall1" value="overall1">
+	<div id="overall11">loading...</div>
+	
+	<div id="overallpie"></div>
+	
+
+</div>
+
+
+<div id="individualalldiv">
+	<input type="button" id="getin" value="get">
+
+	<div id='list' style="float:left;display: inline"></div>
+	<input type="button" id="individual" value="search">
+
+	<div id="individual1" ></div>
+
+
+	<div id="individualbar1"></div>
+
+	<div id="individualbar2select"></div>
+	<div id="individualbar2"></div>
+	
+</div>
+
+<div id="authoralldiv">
+	<input type="text" id="authortext">
+	<input type="button" id="authorbutton" value="authorsearch">
+	<div id="authordiv"></div>
+</div>
+
+</body>
+</html>

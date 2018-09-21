@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<link rel="stylesheet" type="text/css" href="/css/landing.css" media="screen" />
+<script src="http://code.jquery.com/jquery-1.8.3.min.js"></script>
+<script>
+
+	
+	$(document).ready(function(){
+		var rv1,rv2,rv3,rv4,rv5,rv6=false;
+		
+		
+		
+		$("#showRegister").click(function(){
+			$("#registerForm").show();
+			$(".warnings").hide();
+		});
+		
+		if(<%= wrong %>==1){
+		alert("user name or password wrong!")}
+		
+		if(<%= repeatUsername %> !=0){
+		alert("The user name already exists, please choose another user name!");
+		$("#registerForm").show();
+		$(".warnings").hide();}
+		
+		if(<%= repeatEmail %> !=0){
+		alert("The e-mail already exists, please choose another e-mail address!");
+		$("#registerForm").show();
+		$(".warnings").hide();}
+
+		$("#firstName").blur(function(){
+			reg=/^[a-z,A-Z]+$/;
+			if(!reg.test($(this).val())){
+				$(this).css("background-color","red");
+				$("#warning1").show();
+			}
+			else{
+				$(this).css("background-color","white");
+				$("#warning1").hide();
+				rv1=true;
+			}
+		})
+
+		$("#lastName").blur(function(){
+			reg=/^[a-z,A-Z]+$/;
+			if(!reg.test($(this).val())){
+				$(this).css("background-color","red");
+				$("#warning2").show();
+			}
+			else{
+				$(this).css("background-color","white");
+				$("#warning2").hide();
+				rv2=true;
+			}
+		})
+
+		$("#emailAddress").blur(function(){
+			reg=/^[0-9,a-z,A-Z]+([.][0-9,a-z,A-Z]+)*@[0-9,a-z,A-Z]+([.][0-9,a-z,A-Z]+)*$/;
+			if(!reg.test($(this).val())){
+				$(this).css("background-color","red");
+				$("#warning3").show();
+			}
+			else{
+				$(this).css("background-color","white");
+				$("#warning3").hide();
+				rv3=true;
+			}
+		})
+
+		$("#userName").blur(function(){
+			reg=/^[a-zA-Z][a-zA-Z0-9_]{4,15}$/;
+			if(!reg.test($(this).val())){
+				$(this).css("background-color","red");
+				$("#warning4").show();
+			}
+			else{
+				$(this).css("background-color","white");
+				$("#warning4").hide();
+				rv4=true;
+			}
+		})
+
+		$("#password").blur(function(){
+			reg=/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,16}$/;
+			if(!reg.test($(this).val())){
+				$(this).css("background-color","red");
+				$("#warning5").show();
+			}
+			else{
+				$(this).css("background-color","white");
+				$("#warning5").hide();
+				rv5=true;
+			}
+		})
+
+		$("#repassword").blur(function(){
+
+			if($(this).val()!=($("#password").val())){
+				$(this).css("background-color","red");
+				$("#warning6").show();
+			}
+			else{
+				$(this).css("background-color","white");
+				$("#warning6").hide();
+				rv6=true;
+			}
+		})
+
+		$("#registerForm").submit(function(e){
+			if(rv1 & rv2 & rv3 & rv4 & rv5 & rv6){}
+			else{
+				e.preventDefault();
+    			alert("There is some wrong information.");
+			}
+		})
+
+
+		$("#loginForm").submit(function(e){
+			if($("#loginusername").val()=='' || $("#longinpassword").val()==''){
+				e.preventDefault();
+				alert("You should type in user name and password!")
+			}
+		})
+	});
+
+
+</script>
+
+</head>
+<body style="background-image:url(\public\Wiki-background.jpg);">
+<h2 id='title1'>Welcome to the Wiki Analysis</h2>
+<form method = "POST" action="/" id="loginForm" name="loginForm" style="width: 280px;margin-left: auto; margin-right: auto">
+	<fieldset>
+		<p style="color:black">UserName: <input type="text" id="loginusername" name="userName"></p>
+		<p style="color:black">Password:   <input type="password" id="longinpassword" name="password"></p>
+		<input type = "submit" value = "Login" name="submit1" id="submit1"/>
+		<input type="button" value="Register" id="showRegister">
+	</fieldset>
+</form>
+<br>
+
+<form method = "POST" action="/login" id="registerForm" name="registerForm" style="display:none;width: 280px;margin-left: auto; margin-right: auto">
+	<fieldset style="color:white">
+	<p style="color:black">First Name: <input type="text" id="firstName" name="firstName"></p>
+	<span id="warning1" class="warnings">First name should only contain characters!</span>
+	<p style="color:black">Last Name: <input type="text" id="lastName" name="lastName"></p>
+	  <span id="warning2" class="warnings">Last name should only contain characters!</span>
+	<p style="color:black">E-mail Address: <input type="text" id="emailAddress" name="email"></p>
+	  <span id="warning3" class="warnings">E-mail address should be like aa.bb@cc.dd!</span>
+	<p style="color:black">User Name: <input type="text" id="userName" name="userName"></p>
+	  <span id="warning4" class="warnings">User name should only contain characters, numbers and underscore(_), should start with a character, and the length should between 5 and 16.</span>
+	<p style="color:black">Password: <input type="password" id="password" name="password"></p>
+	<span id="warning5" class="warnings">Password should contain at least one number, and one character, and the length should between 6-16.</span>
+	<p style="color:black">Re-enter Password: <input type="password" id="repassword"></p>
+	  <span id="warning6" class="warnings">Password should be the same.</span>
+	<input type="submit" value="register" id="submit2" name="submit2">
+	</fieldset>
+</form>
+</body>
+</html>
